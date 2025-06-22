@@ -245,7 +245,8 @@ btnLogin.onclick = async () => {
   }
 
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, pseudoToEmail(pseudo), password);
+    const email = pseudoToEmail(pseudo);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     currentUser = userCredential.user;
 
     // Charger email réel depuis Firestore
@@ -259,7 +260,13 @@ btnLogin.onclick = async () => {
 
     loadData(currentUser.uid);
   } catch (error) {
-    alert("Erreur connexion : " + error.message);
+    if (error.code === "auth/user-not-found") {
+      alert("❌ Aucun compte trouvé pour ce pseudo.");
+    } else if (error.code === "auth/wrong-password") {
+      alert("❌ Mot de passe incorrect.");
+    } else {
+      alert("Erreur connexion : " + error.message);
+    }
   }
 };
 
