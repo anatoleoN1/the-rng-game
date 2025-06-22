@@ -1,23 +1,93 @@
-<body>
-  <h1>Jeu RNG - Tirage avec HP</h1>
-  <p>Argent : <span id="money">1000</span> €</p>
-  <button id="btn-roll">Tirer un objet (100€)</button>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu RNG avec Firebase</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  <h2>Résultat</h2>
-  <div id="result"></div>
+    // ✅ Configuration Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhxxMOUvM33JRxOS8EnT03odII8BYm7z8",
+      authDomain: "the-rng-game.firebaseapp.com",
+      projectId: "the-rng-game",
+      storageBucket: "the-rng-game.firebasestorage.app",
+      messagingSenderId: "108502993948",
+      appId: "1:108502993948:web:99a01b8b44593cdaf9a3d9"
+    };
 
-  <h2>Inventaire</h2>
-  <ul id="inventory-list"></ul>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  <h2>Quêtes disponibles</h2>
-  <ul id="quest-list"></ul>
-  <div id="quest-result"></div>
+    let currentUser = null;
+    let inventory = [];
+    let money = 1000;
 
-  <script>
-    const btnRoll = document.getElementById('btn-roll');
-    const divResult = document.getElementById('result');
-    const moneySpan = document.getElementById('money');
+    async function register() {
+      const email = document.getElementById("username").value.trim() + "@rng.fake";
+      const password = document.getElementById("password").value;
+      const status = document.getElementById("auth-status");
 
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      const username = email.split("@")[0];
+
+      let role = "Alpha";
+      if (username === "anatoleo") role = "owner";
+      else if (["LeaderDivinFR", "Cronalmoo", "Azerteur1"].includes(username)) role = "admin";
+
+      await setDoc(doc(db, "users", uid), {
+        username,
+        role,
+        money: 1000,
+        inventory: []
+      });
+
+      status.innerText = `✅ Compte créé pour ${username} (${role})`;
+    }
+
+    async function login() {
+      const email = document.getElementById("username").value.trim() + "@rng.fake";
+      const password = document.getElementById("password").value;
+      const status = document.getElementById("auth-status");
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+
+      const snap = await getDoc(doc(db, "users", uid));
+      const data = snap.data();
+
+      currentUser = { uid, ...data };
+      money = data.money;
+      inventory = data.inventory;
+      updateMoney();
+      updateInventory();
+      status.innerText = `✅ Connecté en tant que ${data.username} (rôle : ${data.role})`;
+    }
+
+    async function saveData() {
+      if (!currentUser) return;
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        money,
+        inventory
+      });
+    }
+
+    // 🎲 RNG
     const objects = [
       { name: "1/2", chance: 50, hp: 2 },
       { name: "1/4", chance: 25, hp: 4 },
@@ -35,91 +105,35 @@
       { id: 3, name: "Offrir 10 HP", requiredHP: 10, reward: 400 }
     ];
 
-const questList = document.getElementById('quest-list');
-const questResult = document.getElementById('quest-result');
-
-function displayQuests() {
-  questList.innerHTML = '';
-  quests.forEach(q => {
-    let li = document.createElement('li');
-    let btn = document.createElement('button');
-    btn.textContent = `Faire "${q.name}" (HP: ${q.requiredHP}, +${q.reward}€)`;
-    btn.onclick = () => attemptQuest(q);
-    li.appendChild(btn);
-    questList.appendChild(li);
-  });
-}
-	  
-displayQuests();
-
-
-function attemptQuest(quest) {
-  let hpToSacrifice = quest.requiredHP;
-  let brokeBeforeEnd = false;
-
-  // On trie les objets par HP croissant pour sacrifier d'abord les plus faibles
-  inventory.sort((a, b) => a.hp - b.hp);
-
-  for (let i = 0; i < inventory.length && hpToSacrifice > 0; i++) {
-    let item = inventory[i];
-
-    while (item.hp > 0 && hpToSacrifice > 0) {
-      item.hp--;
-      hpToSacrifice--;
-
-      if (item.hp === 0 && hpToSacrifice > 0) {
-        // Objet cassé avant la fin → Échec
-        brokeBeforeEnd = true;
-        break;
-      }
-    }
-
-    // Supprime les objets cassés
-    if (item.hp === 0) {
-      inventory.splice(i, 1);
-      i--; // Réajuster l’indice car on a retiré l’objet
-    }
-
-    if (brokeBeforeEnd) break;
-  }
-
-  if (brokeBeforeEnd || hpToSacrifice > 0) {
-    questResult.innerText = `❌ Quête "${quest.name}" échouée ! (objet cassé trop tôt)`;
-  } else {
-    money += quest.reward;
-    updateMoney();
-    questResult.innerText = `✅ Quête "${quest.name}" réussie ! +${quest.reward}€`;
-  }
-
-  updateInventory();
-}
-
-
-    let money = 1000;
-    let inventory = [];
+    const btnRoll = document.getElementById('btn-roll');
+    const divResult = document.getElementById('result');
+    const moneySpan = document.getElementById('money');
+    const questList = document.getElementById('quest-list');
+    const questResult = document.getElementById('quest-result');
 
     function updateMoney() {
       moneySpan.textContent = money;
     }
 
-    function rollObject() {
-      let totalChance = objects.reduce((acc, obj) => acc + obj.chance, 0);
-      let rand = Math.random() * totalChance;
-      let cumulative = 0;
-      for (let obj of objects) {
-        cumulative += obj.chance;
-        if (rand <= cumulative) return { ...obj }; // Copie indépendante de l'objet
-      }
-    }
-
     function updateInventory() {
       const list = document.getElementById('inventory-list');
       list.innerHTML = '';
-      inventory.forEach((item, index) => {
-        let li = document.createElement('li');
+      inventory.forEach(item => {
+        const li = document.createElement('li');
         li.textContent = `${item.name} (HP: ${item.hp})`;
         list.appendChild(li);
       });
+      saveData();
+    }
+
+    function rollObject() {
+      const totalChance = objects.reduce((sum, obj) => sum + obj.chance, 0);
+      const rand = Math.random() * totalChance;
+      let cumulative = 0;
+      for (let obj of objects) {
+        cumulative += obj.chance;
+        if (rand <= cumulative) return { ...obj };
+      }
     }
 
     btnRoll.addEventListener('click', () => {
@@ -137,6 +151,77 @@ function attemptQuest(quest) {
       updateInventory();
     });
 
-    updateMoney();
+    function displayQuests() {
+      questList.innerHTML = '';
+      quests.forEach(q => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.textContent = `Faire "${q.name}" (HP: ${q.requiredHP}, +${q.reward}€)`;
+        btn.onclick = () => attemptQuest(q);
+        li.appendChild(btn);
+        questList.appendChild(li);
+      });
+    }
+
+    function attemptQuest(quest) {
+      let hpToSacrifice = quest.requiredHP;
+      let brokeBeforeEnd = false;
+      inventory.sort((a, b) => a.hp - b.hp);
+
+      for (let i = 0; i < inventory.length && hpToSacrifice > 0; i++) {
+        let item = inventory[i];
+        while (item.hp > 0 && hpToSacrifice > 0) {
+          item.hp--;
+          hpToSacrifice--;
+          if (item.hp === 0 && hpToSacrifice > 0) {
+            brokeBeforeEnd = true;
+            break;
+          }
+        }
+        if (item.hp === 0) {
+          inventory.splice(i, 1);
+          i--;
+        }
+        if (brokeBeforeEnd) break;
+      }
+
+      if (brokeBeforeEnd || hpToSacrifice > 0) {
+        questResult.innerText = `❌ Quête "${quest.name}" échouée !`;
+      } else {
+        money += quest.reward;
+        questResult.innerText = `✅ Quête "${quest.name}" réussie !`;
+      }
+
+      updateMoney();
+      updateInventory();
+    }
+
+    displayQuests();
+
+    window.register = register;
+    window.login = login;
   </script>
+</head>
+<body>
+  <h2>Connexion / Inscription</h2>
+  <input id="username" placeholder="Nom d'utilisateur">
+  <input id="password" placeholder="Mot de passe" type="password">
+  <button onclick="register()">S'inscrire</button>
+  <button onclick="login()">Se connecter</button>
+  <p id="auth-status"></p>
+
+  <h1>Jeu RNG - Tirage avec HP</h1>
+  <p>Argent : <span id="money">1000</span> €</p>
+  <button id="btn-roll">Tirer un objet (100€)</button>
+
+  <h2>Résultat</h2>
+  <div id="result"></div>
+
+  <h2>Inventaire</h2>
+  <ul id="inventory-list"></ul>
+
+  <h2>Quêtes disponibles</h2>
+  <ul id="quest-list"></ul>
+  <div id="quest-result"></div>
 </body>
+</html>
