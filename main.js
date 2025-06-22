@@ -48,8 +48,8 @@ const authSection = document.getElementById("auth-section");
 const gameSection = document.getElementById("game-section");
 const authStatus = document.getElementById("auth-status");
 
-const loginUsername = document.getElementById("login-username");
-const loginPassword = document.getElementById("login-password");
+const loginPseudoInput = document.getElementById("login-pseudo");
+const loginPasswordInput = document.getElementById("login-password");
 const registerPseudoInput = document.getElementById("register-pseudo");
 const registerEmailInput = document.getElementById("register-email");
 const registerPasswordInput = document.getElementById("register-password");
@@ -236,42 +236,37 @@ btnRegister.onclick = async () => {
 };
 
 btnLogin.onclick = async () => {
-  const pseudo = loginUsername.value.trim().toLowerCase();
-  const password = loginPassword.value;
+  const pseudo = loginPseudoInput.value.trim();
+  const password = loginPasswordInput.value.trim();
 
   if (!pseudo || !password) {
-    alert("Veuillez remplir tous les champs.");
+    alert("Merci de remplir le pseudo et mot de passe");
     return;
   }
 
   try {
-    // 🔍 Vérifier si le pseudo existe dans Firestore
-    const pseudoDoc = await getDoc(doc(db, "pseudos", pseudo));
-    if (!pseudoDoc.exists()) {
-      alert("❌ Ce compte n'existe pas.");
-      return;
-    }
-
-    // ✅ Connexion avec l'email reconstruit
     const email = pseudoToEmail(pseudo);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
+    currentUser = userCredential.user;
 
-    const userDoc = await getDoc(doc(db, "users", uid));
-    const data = userDoc.data();
+    // Charger email réel depuis Firestore
+    const userDoc = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(userDoc);
+    userEmail = docSnap.exists() ? docSnap.data().email : "";
 
-    currentUser = { uid, ...data };
-    money = data.money;
-    inventory = data.inventory;
+    authSection.style.display = "none";
+    gameSection.style.display = "block";
+    authStatus.innerText = `Bienvenue ${pseudo}!`;
 
-    loginBox.style.display = "none";
-    mainBox.style.display = "block";
-    updateMoney();
-    updateInventory();
-    displayQuests();
+    loadData(currentUser.uid);
   } catch (error) {
-    console.error(error);
-    alert("Erreur lors de la connexion : " + error.message);
+    if (error.code === "auth/user-not-found") {
+      alert("❌ Aucun compte trouvé pour ce pseudo.");
+    } else if (error.code === "auth/wrong-password") {
+      alert("❌ Mot de passe incorrect.");
+    } else {
+      alert("Erreur connexion : " + error.message);
+    }
   }
 };
 
