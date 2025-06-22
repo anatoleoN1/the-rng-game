@@ -48,8 +48,8 @@ const authSection = document.getElementById("auth-section");
 const gameSection = document.getElementById("game-section");
 const authStatus = document.getElementById("auth-status");
 
-const loginPseudoInput = document.getElementById("login-pseudo");
-const loginPasswordInput = document.getElementById("login-password");
+const loginUsername = document.getElementById("login-username");
+const loginPassword = document.getElementById("login-password");
 const registerPseudoInput = document.getElementById("register-pseudo");
 const registerEmailInput = document.getElementById("register-email");
 const registerPasswordInput = document.getElementById("register-password");
