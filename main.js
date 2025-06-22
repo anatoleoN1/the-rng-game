@@ -236,37 +236,42 @@ btnRegister.onclick = async () => {
 };
 
 btnLogin.onclick = async () => {
-  const pseudo = loginPseudoInput.value.trim();
-  const password = loginPasswordInput.value.trim();
+  const pseudo = loginUsername.value.trim().toLowerCase();
+  const password = loginPassword.value;
 
   if (!pseudo || !password) {
-    alert("Merci de remplir le pseudo et mot de passe");
+    alert("Veuillez remplir tous les champs.");
     return;
   }
 
   try {
+    // 🔍 Vérifier si le pseudo existe dans Firestore
+    const pseudoDoc = await getDoc(doc(db, "pseudos", pseudo));
+    if (!pseudoDoc.exists()) {
+      alert("❌ Ce compte n'existe pas.");
+      return;
+    }
+
+    // ✅ Connexion avec l'email reconstruit
     const email = pseudoToEmail(pseudo);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    currentUser = userCredential.user;
+    const uid = userCredential.user.uid;
 
-    // Charger email réel depuis Firestore
-    const userDoc = doc(db, "users", currentUser.uid);
-    const docSnap = await getDoc(userDoc);
-    userEmail = docSnap.exists() ? docSnap.data().email : "";
+    const userDoc = await getDoc(doc(db, "users", uid));
+    const data = userDoc.data();
 
-    authSection.style.display = "none";
-    gameSection.style.display = "block";
-    authStatus.innerText = `Bienvenue ${pseudo}!`;
+    currentUser = { uid, ...data };
+    money = data.money;
+    inventory = data.inventory;
 
-    loadData(currentUser.uid);
+    loginBox.style.display = "none";
+    mainBox.style.display = "block";
+    updateMoney();
+    updateInventory();
+    displayQuests();
   } catch (error) {
-    if (error.code === "auth/user-not-found") {
-      alert("❌ Aucun compte trouvé pour ce pseudo.");
-    } else if (error.code === "auth/wrong-password") {
-      alert("❌ Mot de passe incorrect.");
-    } else {
-      alert("Erreur connexion : " + error.message);
-    }
+    console.error(error);
+    alert("Erreur lors de la connexion : " + error.message);
   }
 };
 
