@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jeu RNG avec Firebase</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- SECTION AUTH -->
+  <section id="auth-section">
+    <h2>Connexion</h2>
+    <input id="login-pseudo" placeholder="Pseudo" autocomplete="username" />
+    <input id="login-password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+    <button id="btn-login">Se connecter</button>
+
+    <h2>Inscription</h2>
+    <input id="register-pseudo" placeholder="Pseudo" autocomplete="username" />
+    <input id="register-email" type="email" placeholder="Email (vrai, pour récupération)" autocomplete="email" />
+    <input id="register-password" type="password" placeholder="Mot de passe" autocomplete="new-password" />
+    <button id="btn-register">S'inscrire</button>
+
+    <p id="auth-status"></p>
+  </section>
+
+  <!-- SECTION JEU -->
+  <section id="game-section" style="display:none;">
+    <h1>Jeu RNG - Tirage avec HP</h1>
+    <p>Argent : <span id="money">1000</span> €</p>
+    <button id="btn-roll">Tirer un objet (100€)</button>
+
+    <h2>Résultat</h2>
+    <div id="result"></div>
+
+    <h2>Inventaire</h2>
+    <ul id="inventory-list"></ul>
+
+    <h2>Quêtes disponibles</h2>
+    <ul id="quest-list"></ul>
+    <div id="quest-result"></div>
+
+    <h2>Boutique des joueurs</h2>
+    <div id="shop-list"></div>
+
+    <h3>Mettre un objet en vente</h3>
+    <select id="sell-item-select"></select>
+    <input id="sell-price" type="number" placeholder="Prix (€)" />
+    <button id="btn-sell">Vendre</button>
+
+    <hr />
+
+    <div id="account-actions">
+      <button id="btn-logout">Déconnexion</button>
+      <button id="btn-change-password">Changer le mot de passe</button>
+      <button id="btn-delete-account">Supprimer mon compte</button>
+    </div>
+  </section>
+
+  <!-- MODAL changement mot de passe -->
+  <div id="modal-change-password" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span id="close-modal" class="close">&times;</span>
+      <h3>Changer le mot de passe</h3>
+      <input id="old-password" type="password" placeholder="Ancien mot de passe" />
+      <input id="new-password" type="password" placeholder="Nouveau mot de passe" />
+      <input id="confirm-password" type="password" placeholder="Confirmer le nouveau mot de passe" />
+      <button id="btn-submit-password-change">Valider</button>
+      <p id="change-password-status"></p>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
