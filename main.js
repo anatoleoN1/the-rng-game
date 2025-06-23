@@ -114,8 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   btnRegister.addEventListener("click", async () => {
-  const pseudo = document.getElementById("registerPseudo").value;
-  const password = document.getElementById("registerPassword").value;
+  const pseudo = document.getElementById("register-pseudo").value;
+  const password = document.getElementById("register-password").value;
 
   if (!pseudo || !password) {
     alert("Veuillez remplir tous les champs.");
