@@ -10,13 +10,13 @@
   <!-- SECTION AUTH -->
   <section id="auth-section">
     <h2>Connexion</h2>
-    <input id="login-pseudo" placeholder="Pseudo" autocomplete="username" />
+    <input id="login-pseudo" placeholder="Pseudo" autocomplete="off" />
     <input id="login-password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
     <button id="btn-login">Se connecter</button>
 
     <h2>Inscription</h2>
-    <input id="register-pseudo" placeholder="Pseudo" autocomplete="username" />
-    <input id="register-email" type="email" placeholder="Email (vrai, pour récupération)" autocomplete="email" />
+    <input id="register-pseudo" placeholder="Pseudo" autocomplete="off" />
+    <input id="register-email" type="email" placeholder="Email (optionnel)" autocomplete="email" />
     <input id="register-password" type="password" placeholder="Mot de passe" autocomplete="new-password" />
     <button id="btn-register">S'inscrire</button>
 
@@ -43,8 +43,10 @@
     <div id="shop-list"></div>
 
     <h3>Mettre un objet en vente</h3>
-    <select id="sell-item-select"></select>
-    <input id="sell-price" type="number" placeholder="Prix (€)" />
+    <select id="sell-item-select">
+      <option value="">Choisir un objet</option>
+    </select>
+    <input id="sell-price" type="number" min="0" placeholder="Prix (€)" />
     <button id="btn-sell">Vendre</button>
 
     <hr />
@@ -57,13 +59,13 @@
   </section>
 
   <!-- MODAL changement mot de passe -->
-  <div id="modal-change-password" class="modal" style="display:none;">
+  <div id="modal-change-password" class="modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-content">
-      <span id="close-modal" class="close">&times;</span>
-      <h3>Changer le mot de passe</h3>
-      <input id="old-password" type="password" placeholder="Ancien mot de passe" />
-      <input id="new-password" type="password" placeholder="Nouveau mot de passe" />
-      <input id="confirm-password" type="password" placeholder="Confirmer le nouveau mot de passe" />
+      <button id="close-modal" class="close" aria-label="Fermer">&times;</button>
+      <h3 id="modal-title">Changer le mot de passe</h3>
+      <input id="old-password" type="password" placeholder="Ancien mot de passe" autocomplete="current-password" />
+      <input id="new-password" type="password" placeholder="Nouveau mot de passe" autocomplete="new-password" />
+      <input id="confirm-password" type="password" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password" />
       <button id="btn-submit-password-change">Valider</button>
       <p id="change-password-status"></p>
     </div>
