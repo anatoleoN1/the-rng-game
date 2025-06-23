@@ -1,37 +1,35 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import {
   getAuth,
+  onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
   signOut,
-  sendPasswordResetEmail,
-  updatePassword,
-  reauthenticateWithCredential,
   EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
   deleteUser,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import {
   getFirestore,
   doc,
-  setDoc,
   getDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
+  setDoc,
   addDoc,
+  collection,
   getDocs,
-  onSnapshot,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
+// Configuration Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBhxxMOUvM33JRxOS8EnT03odII8BYm7z8",
-  authDomain: "the-rng-game.firebaseapp.com",
-  projectId: "the-rng-game",
-  storageBucket: "the-rng-game.firebasestorage.app",
-  messagingSenderId: "108502993948",
-  appId: "1:108502993948:web:99a01b8b44593cdaf9a3d9",
+  apiKey: "AIzaSyC34u7bAW6ydq_cJG6vwUgpcKOSUqflE6w",
+  authDomain: "rng-game-d5443.firebaseapp.com",
+  projectId: "rng-game-d5443",
+  storageBucket: "rng-game-d5443.appspot.com",
+  messagingSenderId: "1023848023255",
+  appId: "1:1023848023255:web:cd3c06fd73800aa366ba63",
+  measurementId: "G-MZ6Y84N5DR",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -41,70 +39,251 @@ const db = getFirestore(app);
 let currentUser = null;
 let inventory = [];
 let money = 1000;
-let userEmail = ""; // vrai email stocké à l'inscription
+let userEmail = "";
 
-// --- ELEMENTS DOM ---
-const authSection = document.getElementById("auth-section");
-const gameSection = document.getElementById("game-section");
-const authStatus = document.getElementById("auth-status");
+// --- DOM ---
+document.addEventListener("DOMContentLoaded", () => {
+  const authSection = document.getElementById("auth-section");
+  const gameSection = document.getElementById("game-section");
+  const authStatus = document.getElementById("auth-status");
 
-const loginPseudoInput = document.getElementById("login-pseudo");
-const loginPasswordInput = document.getElementById("login-password");
-const registerPseudoInput = document.getElementById("register-pseudo");
-const registerEmailInput = document.getElementById("register-email");
-const registerPasswordInput = document.getElementById("register-password");
+  const loginPseudoInput = document.getElementById("login-pseudo");
+  const loginPasswordInput = document.getElementById("login-password");
+  const registerPseudoInput = document.getElementById("register-pseudo");
+  const registerEmailInput = document.getElementById("register-email");
+  const registerPasswordInput = document.getElementById("register-password");
 
-const btnLogin = document.getElementById("btn-login");
-const btnRegister = document.getElementById("btn-register");
-const btnLogout = document.getElementById("btn-logout");
-const btnChangePassword = document.getElementById("btn-change-password");
-const btnDeleteAccount = document.getElementById("btn-delete-account");
+  const btnLogin = document.getElementById("btn-login");
+  const btnRegister = document.getElementById("btn-register");
+  const btnLogout = document.getElementById("btn-logout");
+  const btnChangePassword = document.getElementById("btn-change-password");
+  const btnDeleteAccount = document.getElementById("btn-delete-account");
 
-const modalChangePassword = document.getElementById("modal-change-password");
-const closeModal = document.getElementById("close-modal");
-const btnSubmitPasswordChange = document.getElementById("btn-submit-password-change");
-const oldPasswordInput = document.getElementById("old-password");
-const newPasswordInput = document.getElementById("new-password");
-const confirmPasswordInput = document.getElementById("confirm-password");
-const changePasswordStatus = document.getElementById("change-password-status");
+  const modalChangePassword = document.getElementById("modal-change-password");
+  const closeModal = document.getElementById("close-modal");
+  const btnSubmitPasswordChange = document.getElementById("btn-submit-password-change");
+  const oldPasswordInput = document.getElementById("old-password");
+  const newPasswordInput = document.getElementById("new-password");
+  const confirmPasswordInput = document.getElementById("confirm-password");
+  const changePasswordStatus = document.getElementById("change-password-status");
 
-const moneySpan = document.getElementById("money");
-const btnRoll = document.getElementById("btn-roll");
-const resultDiv = document.getElementById("result");
-const inventoryList = document.getElementById("inventory-list");
-const questList = document.getElementById("quest-list");
-const questResult = document.getElementById("quest-result");
-const shopList = document.getElementById("shop-list");
-const sellItemSelect = document.getElementById("sell-item-select");
-const sellPriceInput = document.getElementById("sell-price");
-const btnSell = document.getElementById("btn-sell");
+  const moneySpan = document.getElementById("money");
+  const btnRoll = document.getElementById("btn-roll");
+  const resultDiv = document.getElementById("result");
+  const inventoryList = document.getElementById("inventory-list");
+  const questList = document.getElementById("quest-list");
+  const questResult = document.getElementById("quest-result");
+  const shopList = document.getElementById("shop-list");
+  const sellItemSelect = document.getElementById("sell-item-select");
+  const sellPriceInput = document.getElementById("sell-price");
+  const btnSell = document.getElementById("btn-sell");
 
-// --- Objets du jeu ---
-const objects = [
-  { name: "1/2", chance: 50, hp: 2 },
-  { name: "1/4", chance: 25, hp: 4 },
-  { name: "1/10", chance: 10, hp: 10 },
-  { name: "1/20", chance: 5, hp: 20 },
-  { name: "1/100", chance: 1, hp: 100 },
-  { name: "1/1,000", chance: 0.1, hp: 1000 },
-  { name: "1/10,000", chance: 0.01, hp: 10000 },
-  { name: "1/100,000", chance: 0.001, hp: 100000 },
-];
+  // Objets
+  const objects = [
+    { name: "1/2", chance: 50, hp: 2 },
+    { name: "1/4", chance: 25, hp: 4 },
+    { name: "1/10", chance: 10, hp: 10 },
+    { name: "1/20", chance: 5, hp: 20 },
+    { name: "1/100", chance: 1, hp: 100 },
+    { name: "1/1,000", chance: 0.1, hp: 1000 },
+    { name: "1/10,000", chance: 0.01, hp: 10000 },
+    { name: "1/100,000", chance: 0.001, hp: 100000 },
+  ];
 
-const quests = [
-  { id: 1, name: "Offrir 2 HP", requiredHP: 2, reward: 100 },
-  { id: 2, name: "Sacrifier 4 HP", requiredHP: 4, reward: 200 },
-  { id: 3, name: "Offrir 10 HP", requiredHP: 10, reward: 400 },
-];
+  const quests = [
+    { id: 1, name: "Offrir 2 HP", requiredHP: 2, reward: 100 },
+    { id: 2, name: "Sacrifier 4 HP", requiredHP: 4, reward: 200 },
+    { id: 3, name: "Offrir 10 HP", requiredHP: 10, reward: 400 },
+  ];
 
-// --- UTILITAIRES ---
-function updateMoney() {
-  moneySpan.textContent = money;
+  async function saveUserData() {
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, "users", currentUser.uid), {
+      inventory,
+      money,
+    }, { merge: true });
+  } catch (e) {
+    console.error("Erreur sauvegarde :", e);
+  }
 }
 
+  
+  function pseudoToEmail(pseudo) {
+    return `${pseudo.trim().toLowerCase()}@rng.fake`;
+  }
+
+  btnRegister.addEventListener("click", async () => {
+  const pseudo = document.getElementById("registerPseudo").value;
+  const password = document.getElementById("registerPassword").value;
+
+  if (!pseudo || !password) {
+    alert("Veuillez remplir tous les champs.");
+    return;
+  }
+
+  try {
+    // Vérifie si le pseudo existe déjà
+    const pseudoDoc = await getDoc(doc(db, "pseudos", pseudo));
+    if (pseudoDoc.exists()) {
+      alert("Ce pseudo est déjà utilisé.");
+      return;
+    }
+
+    // Crée l'utilisateur avec un email fictif
+    const cred = await createUserWithEmailAndPassword(auth, pseudo + "@game.com", password);
+
+    // Lie le pseudo à l'UID dans une collection séparée
+    await setDoc(doc(db, "pseudos", pseudo), { uid: cred.user.uid });
+
+    // Crée un document utilisateur initial
+    await setDoc(doc(db, "users", cred.user.uid), {
+      pseudo,
+      money: 0,
+      inventory: [],
+      titles: [],
+      book: [],
+    });
+
+    alert("Inscription réussie !");
+  } catch (error) {
+    console.error("Erreur d'inscription :", error);
+    alert("Erreur d'inscription : " + error.message);
+  }
+});
+
+
+  btnLogin.addEventListener("click", async () => {
+    const pseudo = loginPseudoInput.value;
+    const password = loginPasswordInput.value;
+    try {
+      await signInWithEmailAndPassword(auth, pseudo + "@game.com", password);
+    } catch (err) {
+      alert("Connexion échouée : " + err.message);
+    }
+  });
+
+  btnLogout.addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      alert("Erreur déconnexion : " + err.message);
+    }
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      authSection.style.display = "none";
+      gameSection.style.display = "block";
+      await loadUserData(user);
+      displayQuests();
+      displayShop();
+    } else {
+      authSection.style.display = "block";
+      gameSection.style.display = "none";
+    }
+  });
+
+  // change password
+  btnChangePassword.onclick = () => {
+    oldPasswordInput.value = "";
+    newPasswordInput.value = "";
+    confirmPasswordInput.value = "";
+    changePasswordStatus.innerText = "";
+    modalChangePassword.style.display = "block";
+  };
+
+  closeModal.onclick = () => {
+    modalChangePassword.style.display = "none";
+  };
+
+  window.onclick = (e) => {
+    if (e.target == modalChangePassword) modalChangePassword.style.display = "none";
+  };
+
+  btnSubmitPasswordChange.onclick = async () => {
+    const oldPass = oldPasswordInput.value;
+    const newPass = newPasswordInput.value;
+    const confirmPass = confirmPasswordInput.value;
+
+    if (!oldPass || !newPass || !confirmPass) return changePasswordStatus.innerText = "Champs requis.";
+    if (newPass !== confirmPass) return changePasswordStatus.innerText = "Les mots de passe ne correspondent pas.";
+    if (newPass.length < 6) return changePasswordStatus.innerText = "6 caractères minimum.";
+
+    try {
+      const cred = EmailAuthProvider.credential(auth.currentUser.email, oldPass);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await updatePassword(auth.currentUser, newPass);
+      changePasswordStatus.innerText = "✅ Mot de passe modifié.";
+      modalChangePassword.style.display = "none";
+    } catch (e) {
+      changePasswordStatus.innerText = "Erreur : " + e.message;
+    }
+  };
+
+  btnDeleteAccount.onclick = async () => {
+    if (!confirm("Supprimer le compte ?")) return;
+    const password = prompt("Mot de passe pour confirmer :");
+    if (!password) return;
+
+    try {
+      const cred = EmailAuthProvider.credential(auth.currentUser.email, password);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await deleteDoc(doc(db, "users", auth.currentUser.uid));
+      await deleteUser(auth.currentUser);
+      alert("Compte supprimé.");
+    } catch (e) {
+      alert("Erreur suppression : " + e.message);
+    }
+  };
+
+  btnRoll.onclick = () => {
+    if (money < 100) return alert("Pas assez d'argent !");
+    money -= 100;
+    const obj = rollObject();
+    inventory.push(obj);
+    updateMoney();
+    updateInventory();
+    resultDiv.innerText = `🎉 Vous avez obtenu : ${obj.name} (HP: ${obj.hp})`;
+    saveUserData()
+  };
+
+  btnSell.onclick = async () => {
+    const index = sellItemSelect.value;
+    const price = parseInt(sellPriceInput.value);
+    if (index === "" || isNaN(price) || price <= 0) return alert("Prix ou objet invalide.");
+
+    const item = inventory[index];
+    const pseudo = currentUser.email.split("@")[0];
+    try {
+      await addDoc(collection(db, "shop"), {
+        seller: currentUser.uid,
+        sellerPseudo: pseudo,
+        item,
+        price,
+        timestamp: Date.now(),
+      });
+      inventory.splice(index, 1);
+      updateInventory();
+      alert("Objet en vente !");
+    } catch (e) {
+      alert("Erreur mise en vente : " + e.message);
+    }
+  };
+
+  // Fonctions Utilitaires (updateMoney, updateInventory, rollObject, displayQuests, attemptQuest, loadUserData, saveData, loadData, displayShop) à insérer ici
+
+
+// Met à jour l'affichage de l'argent
+function updateMoney() {
+  moneySpan.textContent = money.toLocaleString("fr-FR") + " €";
+}
+
+// Met à jour l'inventaire affiché
 function updateInventory() {
   inventoryList.innerHTML = "";
-  sellItemSelect.innerHTML = "";
+  sellItemSelect.innerHTML = '<option value="">Choisir un objet</option>';
   inventory.forEach((item, index) => {
     const li = document.createElement("li");
     li.textContent = `${item.name} (HP: ${item.hp})`;
@@ -115,351 +294,133 @@ function updateInventory() {
     option.textContent = `${item.name} (HP: ${item.hp})`;
     sellItemSelect.appendChild(option);
   });
-  saveData();
 }
 
+// Tirage aléatoire selon les chances définies dans 'objects'
 function rollObject() {
   const totalChance = objects.reduce((sum, obj) => sum + obj.chance, 0);
-  const rand = Math.random() * totalChance;
-  let cumulative = 0;
-  for (let obj of objects) {
-    cumulative += obj.chance;
-    if (rand <= cumulative) return { ...obj };
+  let rand = Math.random() * totalChance;
+  for (const obj of objects) {
+    if (rand < obj.chance) {
+      return { name: obj.name, hp: obj.hp };
+    }
+    rand -= obj.chance;
   }
+  // Fallback au cas où
+  return { name: "1/2", hp: 2 };
 }
 
+// Affiche la liste des quêtes disponibles
 function displayQuests() {
   questList.innerHTML = "";
-  quests.forEach((q) => {
+  quests.forEach(q => {
     const li = document.createElement("li");
+    li.textContent = `${q.name} — Offrir ${q.requiredHP} HP, récompense ${q.reward} ₽`;
     const btn = document.createElement("button");
-    btn.textContent = `Faire "${q.name}" (HP: ${q.requiredHP}, +${q.reward}€)`;
+    btn.textContent = "Tenter";
     btn.onclick = () => attemptQuest(q);
     li.appendChild(btn);
     questList.appendChild(li);
   });
 }
 
+// Tente de réaliser une quête (offrir des HP)
 function attemptQuest(quest) {
-  let hpToSacrifice = quest.requiredHP;
-  let brokeBeforeEnd = false;
-  inventory.sort((a, b) => a.hp - b.hp);
-
-  for (let i = 0; i < inventory.length && hpToSacrifice > 0; i++) {
-    let item = inventory[i];
-    while (item.hp > 0 && hpToSacrifice > 0) {
-      item.hp--;
-      hpToSacrifice--;
-      if (item.hp === 0 && hpToSacrifice > 0) {
-        brokeBeforeEnd = true;
-        break;
-      }
-    }
-    if (item.hp === 0) {
-      inventory.splice(i, 1);
-      i--;
-    }
-    if (brokeBeforeEnd) break;
-  }
-
-  if (brokeBeforeEnd || hpToSacrifice > 0) {
-    questResult.innerText = `❌ Quête "${quest.name}" échouée, pas assez de HP!`;
-  } else {
-    money += quest.reward;
-    updateMoney();
-    updateInventory();
-    questResult.innerText = `✅ Quête "${quest.name}" réussie! +${quest.reward}€`;
-  }
-}
-
-function saveData() {
-  if (!currentUser) return;
-  const userDoc = doc(db, "users", currentUser.uid);
-  setDoc(userDoc, {
-    money,
-    inventory,
-    email: userEmail,
-  });
-}
-
-async function loadData(uid) {
-  const userDoc = doc(db, "users", uid);
-  const docSnap = await getDoc(userDoc);
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    money = data.money || 1000;
-    inventory = data.inventory || [];
-    userEmail = data.email || "";
-  } else {
-    money = 1000;
-    inventory = [];
-    userEmail = "";
-  }
-  updateMoney();
-  updateInventory();
-  displayQuests();
-}
-
-// --- AUTH ---
-
-function pseudoToEmail(pseudo) {
-  // Pour que pseudo soit unique + email formel pour Firebase
-  return `${pseudo.trim().toLowerCase()}@rng.fake`;
-}
-
-btnRegister.onclick = async () => {
-  const pseudo = registerPseudoInput.value.trim();
-  const email = registerEmailInput.value.trim();
-  const password = registerPasswordInput.value.trim();
-
-  if (!pseudo || !email || !password) {
-    alert("Tous les champs sont obligatoires !");
+  const totalHP = inventory.reduce((sum, item) => sum + item.hp, 0);
+  if (totalHP < quest.requiredHP) {
+    questResult.textContent = "Pas assez de HP dans l'inventaire pour cette quête.";
     return;
   }
+  let remaining = quest.requiredHP;
 
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, pseudoToEmail(pseudo), password);
-    currentUser = userCredential.user;
-    userEmail = email; // email réel pour récupération
-    // Sauvegarder email réel dans Firestore (lié au uid)
-    const userDoc = doc(db, "users", currentUser.uid);
-    await setDoc(userDoc, { money: 1000, inventory: [], email: userEmail });
-
-    authSection.style.display = "none";
-    gameSection.style.display = "block";
-    authStatus.innerText = `Bienvenue ${pseudo}!`;
-
-    loadData(currentUser.uid);
-  } catch (error) {
-    alert("Erreur inscription : " + error.message);
-  }
-};
-
-btnLogin.onclick = async () => {
-  const pseudo = loginPseudoInput.value.trim();
-  const password = loginPasswordInput.value.trim();
-
-  if (!pseudo || !password) {
-    alert("Merci de remplir le pseudo et mot de passe");
-    return;
-  }
-
-  try {
-    const email = pseudoToEmail(pseudo);
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    currentUser = userCredential.user;
-
-    // Charger email réel depuis Firestore
-    const userDoc = doc(db, "users", currentUser.uid);
-    const docSnap = await getDoc(userDoc);
-    userEmail = docSnap.exists() ? docSnap.data().email : "";
-
-    authSection.style.display = "none";
-    gameSection.style.display = "block";
-    authStatus.innerText = `Bienvenue ${pseudo}!`;
-
-    loadData(currentUser.uid);
-  } catch (error) {
-    if (error.code === "auth/user-not-found") {
-      alert("❌ Aucun compte trouvé pour ce pseudo.");
-    } else if (error.code === "auth/wrong-password") {
-      alert("❌ Mot de passe incorrect.");
+  // Sacrifie les objets dans l'inventaire pour couvrir la HP demandée
+  inventory = inventory.filter(item => {
+    if (remaining <= 0) return true;
+    if (item.hp <= remaining) {
+      remaining -= item.hp;
+      return false; // Supprime cet objet
     } else {
-      alert("Erreur connexion : " + error.message);
+      // Réduit l'HP de l'objet
+      item.hp -= remaining;
+      remaining = 0;
+      return true;
     }
-  }
-};
-
-btnLogout.onclick = () => {
-  signOut(auth).then(() => {
-    currentUser = null;
-    userEmail = "";
-    inventory = [];
-    money = 1000;
-
-    authSection.style.display = "block";
-    gameSection.style.display = "none";
-    authStatus.innerText = "🔓 Déconnecté.";
   });
-};
 
-// --- CHANGE PASSWORD ---
-
-btnChangePassword.onclick = () => {
-  oldPasswordInput.value = "";
-  newPasswordInput.value = "";
-  confirmPasswordInput.value = "";
-  changePasswordStatus.innerText = "";
-  modalChangePassword.style.display = "block";
-};
-
-closeModal.onclick = () => {
-  modalChangePassword.style.display = "none";
-};
-
-window.onclick = function(event) {
-  if (event.target == modalChangePassword) {
-    modalChangePassword.style.display = "none";
-  }
-};
-
-btnSubmitPasswordChange.onclick = async () => {
-  const oldPass = oldPasswordInput.value;
-  const newPass = newPasswordInput.value;
-  const confirmPass = confirmPasswordInput.value;
-
-  if (!oldPass || !newPass || !confirmPass) {
-    changePasswordStatus.innerText = "Tous les champs sont obligatoires.";
-    return;
-  }
-  if (newPass !== confirmPass) {
-    changePasswordStatus.innerText = "Le nouveau mot de passe ne correspond pas.";
-    return;
-  }
-  if (newPass.length < 6) {
-    changePasswordStatus.innerText = "Le mot de passe doit contenir au moins 6 caractères.";
-    return;
-  }
-
-  const user = auth.currentUser;
-  if (!user) {
-    changePasswordStatus.innerText = "Utilisateur non connecté.";
-    return;
-  }
-
-  // Re-authenticate user before changing password
-  try {
-    const credential = EmailAuthProvider.credential(user.email, oldPass);
-    await reauthenticateWithCredential(user, credential);
-    await updatePassword(user, newPass);
-    changePasswordStatus.innerText = "✅ Mot de passe changé avec succès.";
-    modalChangePassword.style.display = "none";
-  } catch (error) {
-    changePasswordStatus.innerText = "Erreur : " + error.message;
-  }
-};
-
-// --- DELETE ACCOUNT ---
-btnDeleteAccount.onclick = async () => {
-  if (!confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
-
-  const user = auth.currentUser;
-  if (!user) {
-    alert("Aucun utilisateur connecté.");
-    return;
-  }
-
-  // Demande de saisie du mot de passe pour re-authentification
-  const password = prompt("Veuillez saisir votre mot de passe pour confirmer la suppression du compte :");
-  if (!password) {
-    alert("Suppression annulée.");
-    return;
-  }
-
-  try {
-    const credential = EmailAuthProvider.credential(user.email, password);
-    await reauthenticateWithCredential(user, credential);
-
-    // Supprimer les données Firestore
-    await deleteDoc(doc(db, "users", user.uid));
-    await deleteUser(user);
-
-    alert("Compte supprimé avec succès.");
-
-    currentUser = null;
-    userEmail = "";
-    inventory = [];
-    money = 1000;
-
-    authSection.style.display = "block";
-    gameSection.style.display = "none";
-    authStatus.innerText = "🗑️ Compte supprimé.";
-  } catch (error) {
-    alert("Erreur suppression : " + error.message);
-  }
-};
-
-// --- JEUX, BOUTIQUE, QUÊTES (idem que précédemment) ---
-
-btnRoll.onclick = () => {
-  if (money < 100) {
-    alert("Pas assez d'argent.");
-    return;
-  }
-  money -= 100;
+  money += quest.reward;
   updateMoney();
-  const obj = rollObject();
-  inventory.push(obj);
-  resultDiv.innerText = `Vous avez obtenu : ${obj.name} (HP: ${obj.hp})`;
   updateInventory();
-};
+  questResult.textContent = `Quête réussie ! Vous avez gagné ${quest.reward} ₽`;
+  saveUserData()
+}
 
-btnSell.onclick = async () => {
-  const index = sellItemSelect.value;
-  const price = parseInt(sellPriceInput.value);
-  if (index === "" || isNaN(price) || price <= 0) {
-    alert("Sélectionnez un objet valide et un prix supérieur à 0.");
-    return;
-  }
-
-  const item = inventory[index];
-  if (!item) {
-    alert("Objet invalide.");
-    return;
-  }
-
-  // Ajoute à la collection 'shop' dans Firestore
-  const pseudo = currentUser.email.split("@")[0]; // ou charge-le depuis Firestore si tu le stockes
-    await addDoc(collection(db, "shop"), {
-      seller: currentUser.uid, // tu peux le garder en backup
-      sellerPseudo: pseudo,
-      item,
-      price,
-      timestamp: Date.now(),
-    });
-
-
-    inventory.splice(index, 1);
-    updateInventory();
-    alert("Objet mis en vente !");
-  } catch (e) {
-    alert("Erreur mise en vente : " + e.message);
-  }
-};
-
-// Pour afficher boutique, à implémenter la récupération shop
-// (je laisse ça simple ici)
-
-function displayShop() {
-  shopList.innerHTML = "<i>Chargement de la boutique...</i>";
-  getDocs(collection(db, "shop")).then((querySnapshot) => {
-    shopList.innerHTML = "";
-    querySnapshot.forEach((docSnap) => {
+// Charge les données Firestore utilisateur dans le jeu
+async function loadUserData(user) {
+  try {
+    const docSnap = await getDoc(doc(db, "users", user.uid));
+    if (docSnap.exists()) {
       const data = docSnap.data();
+      inventory = data.inventory || [];
+      money = data.money || 1000;
+      updateMoney();
+      updateInventory();
+    } else {
+      console.log("Aucune donnée utilisateur trouvée.");
+    }
+  } catch (err) {
+    console.error("Erreur chargement données utilisateur:", err);
+  }
+}
+
+// Sauvegarde locale (exemple, à adapter si besoin)
+function saveData() {
+  // Ici tu peux ajouter du stockage local ou sauvegarder Firestore si nécessaire
+}
+
+// Charge la sauvegarde locale (exemple)
+function loadData() {
+  // Idem, selon stockage local ou Firestore
+}
+
+// Affiche la boutique (affichage simple ici, à compléter selon besoins)
+async function displayShop() {
+  shopList.innerHTML = "Chargement de la boutique...";
+  try {
+    const shopCol = collection(db, "shop");
+    const shopSnapshot = await getDocs(shopCol);
+    shopList.innerHTML = "";
+    shopSnapshot.forEach(doc => {
+      if (shopList.innerHTML === "") {
+        shopList.innerText = "Aucun objet en vente pour le moment.";
+      }
+      const data = doc.data();
       const div = document.createElement("div");
-      div.textContent = `${data.item.name} (HP:${data.item.hp}) - ${data.price}€ (Vendeur: ${data.sellerPseudo || "?"})`;
+      div.textContent = `${data.sellerPseudo} vend ${data.item.name} (HP: ${data.item.hp}) à ${data.price} ₽`;
+      const buyBtn = document.createElement("button");
+      buyBtn.textContent = "Acheter";
+      if (data.seller === currentUser.uid) {
+        buyBtn.disabled = true;
+        buyBtn.textContent = "C'est votre objet";
+      }
+      buyBtn.onclick = async () => {
+        if (money < data.price) {
+          alert("Pas assez d'argent !");
+          return;
+        }
+        money -= data.price;
+        updateMoney();
+        inventory.push(data.item);
+        updateInventory();
+        // Supprime de la boutique
+        await deleteDoc(doc(db, "shop", doc.id));
+        displayShop();
+        saveUserData()
+      };
+      div.appendChild(buyBtn);
       shopList.appendChild(div);
     });
-  });
-}
-
-// Initialisation
-updateMoney();
-updateInventory();
-displayQuests();
-displayShop();
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    loadData(user.uid);
-    authSection.style.display = "none";
-    gameSection.style.display = "block";
-    authStatus.innerText = "Connecté.";
-  } else {
-    currentUser = null;
-    authSection.style.display = "block";
-    gameSection.style.display = "none";
-    authStatus.innerText = "Déconnecté.";
+  } catch (e) {
+    shopList.innerText = "Erreur chargement boutique : " + e.message;
   }
+}
 });
