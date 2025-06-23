@@ -409,13 +409,15 @@ btnSell.onclick = async () => {
   }
 
   // Ajoute à la collection 'shop' dans Firestore
-  try {
+  const pseudo = currentUser.email.split("@")[0]; // ou charge-le depuis Firestore si tu le stockes
     await addDoc(collection(db, "shop"), {
-      seller: currentUser.uid,
+      seller: currentUser.uid, // tu peux le garder en backup
+      sellerPseudo: pseudo,
       item,
       price,
       timestamp: Date.now(),
     });
+
 
     inventory.splice(index, 1);
     updateInventory();
@@ -435,7 +437,7 @@ function displayShop() {
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
       const div = document.createElement("div");
-      div.textContent = `${data.item.name} (HP:${data.item.hp}) - ${data.price}€ (Vendeur: ${data.seller})`;
+      div.textContent = `${data.item.name} (HP:${data.item.hp}) - ${data.price}€ (Vendeur: ${data.sellerPseudo || "?"})`;
       shopList.appendChild(div);
     });
   });
