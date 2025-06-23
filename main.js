@@ -23,13 +23,12 @@ import {
 
 // Configuration Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyC34u7bAW6ydq_cJG6vwUgpcKOSUqflE6w",
-  authDomain: "rng-game-d5443.firebaseapp.com",
-  projectId: "rng-game-d5443",
-  storageBucket: "rng-game-d5443.appspot.com",
-  messagingSenderId: "1023848023255",
-  appId: "1:1023848023255:web:cd3c06fd73800aa366ba63",
-  measurementId: "G-MZ6Y84N5DR",
+  apiKey: "AIzaSyBhxxMOUvM33JRxOS8EnT03odII8BYm7z8",
+  authDomain: "the-rng-game.firebaseapp.com",
+  projectId: "the-rng-game",
+  storageBucket: "the-rng-game.appspot.com",
+  messagingSenderId: "108502993948",
+  appId: "1:108502993948:web:99a01b8b44593cdaf9a3d9"
 };
 
 const app = initializeApp(firebaseConfig);
